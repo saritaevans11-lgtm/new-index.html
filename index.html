@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DealDNA — Business Acquisition Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --navy:       #0f2244;
+  --navy-mid:   #1a3a6b;
+  --navy-light: #2a5298;
+  --accent:     #2563eb;
+  --accent2:    #3b82f6;
+  --white:      #ffffff;
+  --off-white:  #f8faff;
+  --grey-100:   #f1f5f9;
+  --grey-200:   #e2e8f0;
+  --grey-400:   #94a3b8;
+  --grey-600:   #475569;
+  --grey-800:   #1e293b;
+  --green:      #059669;
+  --green-light:#d1fae5;
+  --red:        #dc2626;
+  --red-light:  #fee2e2;
+  --yellow:     #d97706;
+  --yellow-light:#fef3c7;
+  --shadow-sm:  0 1px 3px rgba(15,34,68,.08), 0 1px 2px rgba(15,34,68,.06);
+  --shadow-md:  0 4px 16px rgba(15,34,68,.12), 0 2px 6px rgba(15,34,68,.08);
+  --shadow-lg:  0 10px 40px rgba(15,34,68,.18), 0 4px 12px rgba(15,34,68,.1);
+  --radius:     10px;
+  --radius-lg:  16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--off-white);font-family:'DM Sans',sans-serif;color:var(--grey-800);min-height:100vh;line-height:1.6}
+h1,h2,h3{font-family:'DM Serif Display',serif;color:var(--navy)}
+
+/* Inputs */
+input,textarea,select{
+  background:var(--white);border:1.5px solid var(--grey-200);color:var(--grey-800);
+  font-family:'DM Sans',sans-serif;font-size:14px;border-radius:8px;
+  padding:10px 14px;width:100%;outline:none;transition:all .2s;display:block
+}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+input::placeholder,textarea::placeholder{color:var(--grey-400)}
+label{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--grey-600);display:block;margin-bottom:6px}
+
+/* Buttons */
+.btn-primary{
+  background:var(--accent);border:none;color:var(--white);
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
+  padding:12px 24px;cursor:pointer;border-radius:8px;
+  transition:all .2s;width:100%;display:block;letter-spacing:.02em
+}
+.btn-primary:hover{background:var(--navy-light);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{
+  background:var(--white);border:1.5px solid var(--grey-200);color:var(--grey-600);
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+  padding:8px 16px;cursor:pointer;border-radius:8px;transition:all .2s
+}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);background:rgba(37,99,235,.04)}
+.btn-ghost{
+  background:none;border:none;color:var(--grey-600);font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:500;padding:8px 14px;cursor:pointer;border-radius:8px;
+  transition:all .2s
+}
+.btn-ghost:hover{background:var(--grey-100);color:var(--navy)}
+.btn-google{
+  background:var(--white);border:1.5px solid var(--grey-200);color:var(--grey-800);
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;
+  padding:11px 20px;cursor:pointer;border-radius:8px;width:100%;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;
+  box-shadow:var(--shadow-sm)
+}
+.btn-google:hover{border-color:var(--grey-400);box-shadow:var(--shadow-md)}
+
+/* Cards */
+.card{background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px solid var(--grey-200);padding:28px}
+
+/* Tabs */
+.tab-bar{display:flex;gap:4px;background:var(--grey-100);padding:4px;border-radius:10px;margin-bottom:20px}
+.tab-btn{
+  flex:1;background:none;border:none;color:var(--grey-600);font-family:'DM Sans',sans-serif;
+  font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  padding:8px 12px;cursor:pointer;border-radius:7px;transition:all .2s;white-space:nowrap
+}
+.tab-btn.act{background:var(--white);color:var(--navy);box-shadow:var(--shadow-sm)}
+
+/* Badges */
+.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 10px;border-radius:20px;text-transform:uppercase}
+.badge-buy{background:var(--green-light);color:var(--green)}
+.badge-pass{background:var(--red-light);color:var(--red)}
+.badge-negotiate{background:var(--yellow-light);color:var(--yellow)}
+
+/* Layout */
+.hidden{display:none!important}
+#header{
+  background:var(--navy);padding:0 32px;height:64px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(15,34,68,.25)
+}
+#main{max-width:1040px;margin:0 auto;padding:32px 20px}
+#grid{display:grid;grid-template-columns:1fr;gap:24px}
+#grid.split{grid-template-columns:1fr 1fr}
+
+/* Overlay */
+.overlay{position:fixed;inset:0;background:rgba(15,34,68,.6);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:32px;width:100%;max-width:420px}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--grey-400);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--grey-200)}
+
+/* Alerts */
+.alert-err{color:var(--red);font-size:13px;background:var(--red-light);border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-top:8px}
+.alert-info{color:var(--navy-light);font-size:13px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-top:8px}
+
+/* Flag items */
+.flag-item{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--grey-100);font-size:14px;line-height:1.55}
+.flag-item:last-child{border-bottom:none}
+
+/* History items */
+.hist-item{padding:14px 16px;border:1.5px solid var(--grey-200);border-radius:10px;cursor:pointer;margin-bottom:8px;transition:all .2s}
+.hist-item:hover{border-color:var(--accent);box-shadow:var(--shadow-sm)}
+
+/* Highlight boxes */
+.hl-box{background:var(--off-white);border:1.5px solid var(--grey-200);border-radius:10px;padding:14px 16px}
+.hl-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-400);margin-bottom:4px}
+.hl-value{font-size:15px;font-weight:700;color:var(--navy)}
+
+/* Verdict hero */
+.verdict-buy{background:linear-gradient(135deg,#059669,#047857);color:white}
+.verdict-pass{background:linear-gradient(135deg,#dc2626,#b91c1c);color:white}
+.verdict-negotiate{background:linear-gradient(135deg,#d97706,#b45309);color:white}
+
+/* Score ring */
+.score-ring{width:72px;height:72px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4)}
+
+/* Loading */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fadeUp{animation:fadeUp .35s ease forwards}
+.spinner{width:36px;height:36px;border:3px solid var(--grey-200);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+
+/* Valuation bar */
+.val-bar{height:6px;background:var(--grey-200);border-radius:3px;overflow:hidden;margin:8px 0}
+.val-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--navy-light));border-radius:3px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+
+/* Mobile */
+@media(max-width:680px){
+  #grid.split{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr!important}
+  #header{padding:0 16px}
+  #main{padding:20px 12px}
+  .card{padding:18px}
+}
+
+/* Hero banner */
+#hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);padding:48px 20px 40px;text-align:center;color:white;margin-bottom:32px}
+#hero h1{font-size:42px;color:white;margin-bottom:10px;letter-spacing:-.02em}
+#hero p{font-size:16px;color:rgba(255,255,255,.75);max-width:520px;margin:0 auto 24px}
+.hero-stats{display:flex;justify-content:center;gap:40px;margin-top:28px}
+.hero-stat{text-align:center}
+.hero-stat-num{font-family:'DM Serif Display',serif;font-size:28px;color:white}
+.hero-stat-label{font-size:12px;color:rgba(255,255,255,.6);letter-spacing:.06em;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<!-- AUTH MODAL -->
+<div class="overlay hidden" id="authModal">
+  <div class="modal">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div style="width:28px;height:28px;background:var(--navy);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px">🧬</div>
+      <h2 style="font-size:22px" id="authTitle">Sign In</h2>
+    </div>
+    <p style="font-size:13px;color:var(--grey-400);margin-bottom:22px" id="authSub">Welcome back to DealDNA</p>
+
+    <button class="btn-google" id="googleBtn" onclick="googleLogin()">
+      <svg width="17" height="17" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="divider">or</div>
+
+    <div style="display:grid;gap:12px">
+      <div><label>Email</label><input type="email" id="authEmail" placeholder="you@example.com"/></div>
+      <div><label>Password</label><input type="password" id="authPassword" placeholder="Min. 6 characters"/></div>
+      <div id="authError" class="hidden alert-err"></div>
+      <button class="btn-primary" id="authSubmitBtn" onclick="emailAuth()">Sign In</button>
+    </div>
+
+    <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--grey-400)">
+      <span id="authToggleText">Don't have an account? </span>
+      <span style="color:var(--accent);cursor:pointer;font-weight:600" onclick="toggleAuthMode()" id="authToggleLink">Sign up free</span>
+    </div>
+    <div style="text-align:right;margin-top:14px">
+      <button class="btn-ghost" style="font-size:12px" onclick="closeAuth()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL -->
+<div class="overlay hidden" id="upgradeModal">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">🧬</div>
+    <h2 style="font-size:24px;margin-bottom:8px">Free Limit Reached</h2>
+    <p style="font-size:14px;color:var(--grey-400);margin-bottom:24px;line-height:1.7">You've used all 3 free analyses this month.<br/>Upgrade to Pro for unlimited reports.</p>
+    <div style="background:var(--navy);border-radius:var(--radius);padding:20px;margin-bottom:20px;color:white">
+      <div style="font-family:'DM Serif Display',serif;font-size:42px;color:white">$49<span style="font-size:18px;opacity:.7">/mo</span></div>
+      <div style="font-size:12px;opacity:.6;margin-top:4px;letter-spacing:.06em;text-transform:uppercase">DealDNA Pro — Unlimited Analyses</div>
+    </div>
+    <button class="btn-primary" style="margin-bottom:10px" onclick="alert('Add your Stripe payment link here!')">Upgrade to Pro →</button>
+    <button class="btn-ghost" style="width:100%" onclick="hide('upgradeModal')">Maybe later</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px">🧬</div>
+    <div>
+      <div style="font-family:'DM Serif Display',serif;font-size:20px;color:white;line-height:1;letter-spacing:-.01em">DealDNA</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.5);letter-spacing:.14em;text-transform:uppercase">Acquisition Intelligence</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div id="userInfo" class="hidden" style="font-size:13px;color:rgba(255,255,255,.7);text-align:right">
+      <div id="userName" style="color:white;font-weight:500"></div>
+      <div id="reportsLeftDisplay" style="font-size:11px"></div>
+    </div>
+    <button class="btn-ghost hidden" id="historyBtn" onclick="toggleHistory()" style="color:rgba(255,255,255,.75);font-size:13px">History</button>
+    <button class="btn-ghost hidden" id="signOutBtn" onclick="doSignOut()" style="color:rgba(255,255,255,.75);font-size:13px">Sign Out</button>
+    <button class="btn-secondary hidden" id="upgradeHeaderBtn" onclick="show('upgradeModal')" style="font-size:12px;padding:6px 14px;border-color:rgba(255,255,255,.3);color:white;background:rgba(255,255,255,.1)">Upgrade Pro</button>
+    <button class="btn-primary" id="signInBtn" onclick="openAuth()" style="width:auto;padding:9px 20px;font-size:13px">Sign In</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<div id="hero">
+  <h1>🧬 DealDNA</h1>
+  <p>AI-powered business acquisition analysis. Get an instant verdict, valuation, red flags, and negotiation strategy for any deal.</p>
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+    <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:6px 16px;font-size:13px;color:white">✓ Instant AI Analysis</span>
+    <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:6px 16px;font-size:13px;color:white">✓ Fair Valuation Range</span>
+    <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:6px 16px;font-size:13px;color:white">✓ Negotiation Strategy</span>
+  </div>
+</div>
+
+<div id="main">
+  <!-- HISTORY PANEL -->
+  <div class="card hidden" id="historyPanel" style="margin-bottom:24px">
+    <h3 style="font-size:18px;margin-bottom:16px">Past Analyses</h3>
+    <div id="historyList"><p style="font-size:13px;color:var(--grey-400)">No reports yet. Analyze your first deal below.</p></div>
+  </div>
+
+  <div id="grid">
+    <!-- INPUT CARD -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+        <h3 style="font-size:19px">Enter Deal Details</h3>
+        <button class="btn-secondary" onclick="loadSample()" style="font-size:12px;padding:7px 14px">↓ Load Sample</button>
+      </div>
+      <div style="display:grid;gap:14px">
+        <div><label>Business Name *</label><input id="f_name" placeholder="e.g. SaaS Email Automation Tool"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" class="grid2">
+          <div><label>Asking Price ($) *</label><input id="f_askingPrice" type="number" placeholder="180000"/></div>
+          <div><label>Annual Profit / SDE ($) *</label><input id="f_annualProfit" type="number" placeholder="48000"/></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" class="grid2">
+          <div><label>Annual Revenue ($)</label><input id="f_annualRevenue" type="number" placeholder="72000"/></div>
+          <div><label>Years in Operation</label><input id="f_yearsInOperation" type="number" placeholder="3"/></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" class="grid2">
+          <div><label>Employees</label><input id="f_employees" type="number" placeholder="1"/></div>
+          <div><label>Industry</label><input id="f_industry" placeholder="SaaS / E-commerce / etc"/></div>
+        </div>
+        <div><label>Business Description</label><textarea id="f_description" rows="4" placeholder="Paste the listing description here for the most accurate analysis..." style="resize:vertical"></textarea></div>
+        <div id="formError" class="hidden alert-err"></div>
+        <button class="btn-primary" id="analyzeBtn" onclick="analyze()" style="padding:14px;font-size:15px">
+          🧬 Analyze This Deal
+        </button>
+        <p style="font-size:12px;color:var(--grey-400);text-align:center" id="freeNote">Free account · 3 analyses/month · No credit card needed</p>
+      </div>
+    </div>
+
+    <!-- REPORT CARD -->
+    <div class="card hidden" id="reportPanel">
+      <div id="loadingView" class="hidden" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:16px">
+        <div class="spinner"></div>
+        <p style="font-size:14px;color:var(--grey-400);font-weight:500">Sequencing deal DNA...</p>
+        <p style="font-size:12px;color:var(--grey-400)">Running valuation models & risk analysis</p>
+      </div>
+      <div id="reportView" class="hidden fadeUp"></div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:24px;border-top:1px solid var(--grey-200);margin-top:24px;background:white">
+  <p style="font-size:11px;color:var(--grey-400);letter-spacing:.04em">DEALDNA · AI analysis is for reference only · Always consult a professional before acquiring a business</p>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+var FREE_LIMIT    = 3;
+var currentUser   = null;
+var monthlyCount  = 0;
+var savedReports  = [];
+var isSignup      = false;
+var currentReport = null;
+var activeTab     = "verdict";
+var historyVisible= false;
+
+var VERDICT_STYLES = {
+  BUY:       {cls:"verdict-buy",      badge:"badge-buy",       label:"BUY"},
+  PASS:      {cls:"verdict-pass",     badge:"badge-pass",      label:"PASS"},
+  NEGOTIATE: {cls:"verdict-negotiate",badge:"badge-negotiate", label:"NEGOTIATE"}
+};
+var RISK_COLOR = {LOW:"var(--green)",MEDIUM:"var(--yellow)",HIGH:"var(--red)"};
+
+var SAMPLE = {
+  name:"SaaS Email Automation Tool", askingPrice:"180000", annualRevenue:"72000",
+  annualProfit:"48000", yearsInOperation:"3", employees:"1", industry:"SaaS / Software",
+  description:"Bootstrapped email automation SaaS with 320 paying customers. MRR of $6,000. Built on Laravel + Vue. Owner wants to retire. No debt. Full source code and customer list included. Churn rate under 3% monthly."
+};
+
+// ── Firebase ─────────────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey:            "AIzaSyDN-vvEa9fXk7Jry0MQuenvX_mbi6HcCYw",
+  authDomain:        "dealdna.firebaseapp.com",
+  projectId:         "dealdna",
+  storageBucket:     "dealdna.firebasestorage.app",
+  messagingSenderId: "618178004289",
+  appId:             "1:618178004289:web:00bc60e34f8d94f83e8dc0"
+});
+var auth = firebase.auth();
+var db   = firebase.firestore();
+
+auth.onAuthStateChanged(function(u) {
+  currentUser = u;
+  if (u) {
+    show("userInfo"); show("historyBtn"); show("signOutBtn");
+    hide("signInBtn"); hide("freeNote");
+    document.getElementById("userName").textContent = u.displayName || u.email.split("@")[0];
+    document.getElementById("analyzeBtn").textContent = "🧬 Analyze This Deal";
+    loadReports();
+  } else {
+    hide("userInfo"); hide("historyBtn"); hide("signOutBtn"); hide("upgradeHeaderBtn");
+    show("signInBtn"); show("freeNote");
+    document.getElementById("analyzeBtn").textContent = "🧬 Analyze This Deal";
+    monthlyCount = 0; savedReports = [];
+  }
+});
+
+function loadReports() {
+  db.collection("reports")
+    .where("uid","==",currentUser.uid)
+    .orderBy("createdAt","desc")
+    .get()
+    .then(function(snap) {
+      savedReports = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+      var now = new Date();
+      monthlyCount = savedReports.filter(function(r){
+        var d = r.createdAt&&r.createdAt.toDate ? r.createdAt.toDate() : new Date(r.createdAt);
+        return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+      }).length;
+      updateCounter();
+      renderHistory();
+    })
+    .catch(function(e){ console.error("loadReports:",e); });
+}
+
+function saveReport(rpt, frm) {
+  if (!currentUser) return;
+  db.collection("reports").add({
+    uid: currentUser.uid, form: frm, report: rpt,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){ loadReports(); }).catch(function(e){ console.error("save:",e); });
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function googleLogin() {
+  hide("authError");
+  var provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+    .then(function(){ closeAuth(); })
+    .catch(function(e){ showErr("authError", e.message.replace("Firebase: ","").replace(/\s*\(auth\/[^)]*\)/g,"")); });
+}
+
+function emailAuth() {
+  hide("authError");
+  var email = document.getElementById("authEmail").value.trim();
+  var pass  = document.getElementById("authPassword").value;
+  if (!email||!pass) { showErr("authError","Please enter your email and password."); return; }
+  var fn = isSignup
+    ? auth.createUserWithEmailAndPassword(email,pass)
+    : auth.signInWithEmailAndPassword(email,pass);
+  fn.then(function(){ closeAuth(); })
+    .catch(function(e){ showErr("authError", e.message.replace("Firebase: ","").replace(/\s*\(auth\/[^)]*\)/g,"")); });
+}
+
+function doSignOut() {
+  auth.signOut().then(function(){
+    currentReport=null;
+    hide("reportPanel");
+    document.getElementById("grid").classList.remove("split");
+  });
+}
+
+function toggleAuthMode() {
+  isSignup = !isSignup;
+  document.getElementById("authTitle").textContent      = isSignup ? "Create Account"                      : "Sign In";
+  document.getElementById("authSub").textContent        = isSignup ? "3 free analyses/month · No credit card" : "Welcome back to DealDNA";
+  document.getElementById("authSubmitBtn").textContent  = isSignup ? "Create Account"                      : "Sign In";
+  document.getElementById("authToggleText").textContent = isSignup ? "Already have an account? "           : "Don't have an account? ";
+  document.getElementById("authToggleLink").textContent = isSignup ? "Sign in"                             : "Sign up free";
+  hide("authError");
+}
+
+function openAuth()  { show("authModal"); }
+function closeAuth() { hide("authModal"); hide("authError"); }
+
+// ── Analyze ───────────────────────────────────────────────────────────────────
+function analyze() {
+  var form = getForm();
+  if (!form.name||!form.askingPrice||!form.annualProfit) {
+    showErr("formError","Please fill in Business Name, Asking Price, and Annual Profit."); return;
+  }
+  hide("formError");
+  if (!currentUser) { openAuth(); return; }
+  if (monthlyCount >= FREE_LIMIT) { show("upgradeModal"); return; }
+
+  show("reportPanel");
+  document.getElementById("grid").classList.add("split");
+  document.getElementById("loadingView").style.display = "flex";
+  hide("reportView");
+
+  var prompt =
+    "You are DealDNA, an expert business acquisition analyst. Analyze this business listing and return ONLY a valid JSON object. No markdown, no code fences, no explanation — raw JSON only.\n\n" +
+    "Business: "    + form.name +
+    " | Asking: $"  + form.askingPrice +
+    " | Revenue: $" + (form.annualRevenue||"Unknown") +
+    " | Profit/SDE: $" + form.annualProfit +
+    " | Years: "    + (form.yearsInOperation||"Unknown") +
+    " | Employees: "+ (form.employees||"Unknown") +
+    " | Industry: " + (form.industry||"Unknown") +
+    " | Description: " + (form.description||"None provided") + "\n\n" +
+    "Return this exact JSON structure with real values:\n" +
+    '{"verdict":"BUY","verdictReason":"Compelling one-sentence reason","score":78,' +
+    '"valuationEstimate":{"low":140000,"fair":165000,"high":195000},' +
+    '"redFlags":["Specific risk 1","Specific risk 2","Specific risk 3"],' +
+    '"greenFlags":["Specific strength 1","Specific strength 2","Specific strength 3"],' +
+    '"negotiationPoints":["Leverage point 1","Leverage point 2","Leverage point 3"],' +
+    '"dueDiligenceChecklist":["Verify item 1","Check item 2","Confirm item 3","Review item 4","Validate item 5"],' +
+    '"marketContext":"2-3 sentences about industry context and comparable deals.",' +
+    '"riskLevel":"MEDIUM",' +
+    '"highlights":[{"label":"Price/Profit Multiple","value":"3.75x SDE"},{"label":"Implied ROI","value":"26% annually"},{"label":"Payback Period","value":"3.75 years"},{"label":"Revenue Quality","value":"Recurring"}]}';
+
+  fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1200,
+      messages: [{role:"user", content: prompt}]
+    })
+  })
+  .then(function(res){ return res.json(); })
+  .then(function(data){
+    if (data.error) throw new Error(data.error.message||"API error");
+    var text  = (data.content||[]).map(function(b){ return b.text||""; }).join("");
+    var clean = text.replace(/```json|```/g,"").trim();
+    var rpt   = JSON.parse(clean);
+    currentReport = rpt;
+    renderReport(rpt);
+    saveReport(rpt, form);
+  })
+  .catch(function(e){
+    console.error("Analyze error:",e);
+    document.getElementById("loadingView").style.display="none";
+    showErr("formError","Analysis failed: "+e.message+". Please try again.");
+    hide("reportPanel");
+    document.getElementById("grid").classList.remove("split");
+  });
+}
+
+// ── Render Report ─────────────────────────────────────────────────────────────
+function renderReport(r) {
+  document.getElementById("loadingView").style.display = "none";
+  var vs = VERDICT_STYLES[r.verdict] || VERDICT_STYLES["NEGOTIATE"];
+  var rc = RISK_COLOR[r.riskLevel]   || "var(--grey-600)";
+
+  var html =
+    // Verdict Hero
+    '<div class="'+vs.cls+'" style="border-radius:12px;padding:20px 24px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div>' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.1em;opacity:.8;text-transform:uppercase;margin-bottom:4px">AI Verdict</div>' +
+        '<div style="font-family:\'DM Serif Display\',serif;font-size:36px;line-height:1;margin-bottom:6px">'+r.verdict+'</div>' +
+        '<div style="font-size:13px;opacity:.9;max-width:200px;line-height:1.4">'+r.verdictReason+'</div>' +
+      '</div>' +
+      '<div class="score-ring">' +
+        '<div style="font-family:\'DM Serif Display\',serif;font-size:28px;line-height:1">'+r.score+'</div>' +
+        '<div style="font-size:9px;opacity:.75;letter-spacing:.06em;text-transform:uppercase">Score</div>' +
+      '</div>' +
+    '</div>' +
+
+    // Highlights grid
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">' +
+      (r.highlights||[]).map(function(h){
+        return '<div class="hl-box"><div class="hl-label">'+h.label+'</div><div class="hl-value">'+h.value+'</div></div>';
+      }).join("") +
+    '</div>' +
+
+    // Valuation range
+    '<div style="background:var(--off-white);border:1.5px solid var(--grey-200);border-radius:10px;padding:16px;margin-bottom:18px">' +
+      '<div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-400);margin-bottom:10px">Fair Valuation Range</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">' +
+        '<span style="font-size:13px;color:var(--red);font-weight:600">$'+num(r.valuationEstimate&&r.valuationEstimate.low)+'</span>' +
+        '<span style="font-size:15px;color:var(--navy);font-weight:700">$'+num(r.valuationEstimate&&r.valuationEstimate.fair)+' <span style="font-size:11px;font-weight:400;color:var(--grey-400)">fair value</span></span>' +
+        '<span style="font-size:13px;color:var(--green);font-weight:600">$'+num(r.valuationEstimate&&r.valuationEstimate.high)+'</span>' +
+      '</div>' +
+      '<div class="val-bar"><div class="val-fill" style="width:'+r.score+'%"></div></div>' +
+      '<div style="display:flex;justify-content:space-between;margin-top:6px">' +
+        '<span style="font-size:11px;color:var(--grey-400)">Conservative</span>' +
+        '<span style="font-size:11px;font-weight:600;color:'+rc+'">Risk: '+r.riskLevel+'</span>' +
+        '<span style="font-size:11px;color:var(--grey-400)">Optimistic</span>' +
+      '</div>' +
+    '</div>' +
+
+    // Tabs
+    '<div class="tab-bar">' +
+      ['verdict','flags','negotiate','checklist'].map(function(t){
+        return '<button class="tab-btn'+(t==="verdict"?" act":"")+'" onclick="switchTab(\''+t+'\',this)">'+
+          (t==="checklist"?"Due Diligence":t.charAt(0).toUpperCase()+t.slice(1))+'</button>';
+      }).join("") +
+    '</div>' +
+    '<div id="tabContent">'+tabContent(r,"verdict")+'</div>';
+
+  document.getElementById("reportView").innerHTML = html;
+  show("reportView");
+}
+
+function tabContent(r, tab) {
+  if (!r) return "";
+  if (tab==="verdict")
+    return '<div style="background:var(--off-white);border-radius:10px;padding:16px;font-size:14px;color:var(--grey-600);line-height:1.7;border:1.5px solid var(--grey-200)">'+(r.marketContext||"")+'</div>';
+  if (tab==="flags")
+    return '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--red);margin-bottom:4px">🔴 Red Flags</div>' +
+      (r.redFlags||[]).map(function(f){ return '<div class="flag-item"><span style="color:var(--red);flex-shrink:0;font-size:16px">•</span><span style="color:var(--grey-700)">'+f+'</span></div>'; }).join("") +
+      '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--green);margin:16px 0 4px">🟢 Green Flags</div>' +
+      (r.greenFlags||[]).map(function(f){ return '<div class="flag-item"><span style="color:var(--green);flex-shrink:0;font-size:16px">•</span><span style="color:var(--grey-700)">'+f+'</span></div>'; }).join("");
+  if (tab==="negotiate")
+    return '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px">Negotiation Leverage Points</div>' +
+      (r.negotiationPoints||[]).map(function(p,i){ return '<div class="flag-item"><span style="background:var(--navy);color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+(i+1)+'</span><span style="color:var(--grey-700)">'+p+'</span></div>'; }).join("");
+  if (tab==="checklist")
+    return '<div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);margin-bottom:8px">Due Diligence Checklist</div>' +
+      (r.dueDiligenceChecklist||[]).map(function(item){ return '<div class="flag-item"><input type="checkbox" style="width:16px;height:16px;min-width:16px;accent-color:var(--accent);cursor:pointer;padding:0;margin-top:3px"/><span style="color:var(--grey-700)">'+item+'</span></div>'; }).join("");
+  return "";
+}
+
+function switchTab(tab, btn) {
+  activeTab = tab;
+  document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("act"); });
+  btn.classList.add("act");
+  document.getElementById("tabContent").innerHTML = tabContent(currentReport, tab);
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function renderHistory() {
+  var list = document.getElementById("historyList");
+  if (!savedReports.length) {
+    list.innerHTML='<p style="font-size:13px;color:var(--grey-400)">No reports yet. Analyze your first deal below.</p>'; return;
+  }
+  list.innerHTML = savedReports.map(function(r,i){
+    var vs = VERDICT_STYLES[r.report&&r.report.verdict]||{badge:"badge-negotiate",label:"?"};
+    var d  = r.createdAt&&r.createdAt.toDate ? r.createdAt.toDate() : new Date(r.createdAt||Date.now());
+    return '<div class="hist-item" onclick="loadHistoryItem('+i+')">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div style="font-size:14px;font-weight:600;color:var(--navy)">'+(r.form&&r.form.name||"Unnamed")+'</div>' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<span class="badge '+vs.badge+'">'+vs.label+'</span>' +
+          '<span style="font-size:12px;color:var(--grey-400)">'+d.toLocaleDateString()+'</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--grey-400);margin-top:4px">$'+num(r.form&&r.form.askingPrice)+' asking &nbsp;·&nbsp; Score: '+(r.report&&r.report.score||0)+'/100</div>' +
+    '</div>';
+  }).join("");
+}
+
+function loadHistoryItem(i) {
+  var r = savedReports[i];
+  currentReport = r.report;
+  setFormValues(r.form);
+  show("reportPanel");
+  document.getElementById("grid").classList.add("split");
+  document.getElementById("loadingView").style.display="none";
+  renderReport(r.report);
+  if (historyVisible) toggleHistory();
+}
+
+function toggleHistory() {
+  historyVisible=!historyVisible;
+  historyVisible ? show("historyPanel") : hide("historyPanel");
+}
+
+function updateCounter() {
+  var left = FREE_LIMIT - monthlyCount;
+  var el   = document.getElementById("reportsLeftDisplay");
+  if (el) { el.textContent=left+"/"+FREE_LIMIT+" analyses left"; el.style.color=left>0?"rgba(255,255,255,.6)":"#fca5a5"; }
+  if (left<=0) show("upgradeHeaderBtn");
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getForm() {
+  return {
+    name:             val("f_name"),            askingPrice:     val("f_askingPrice"),
+    annualRevenue:    val("f_annualRevenue"),   annualProfit:    val("f_annualProfit"),
+    yearsInOperation: val("f_yearsInOperation"),employees:       val("f_employees"),
+    industry:         val("f_industry"),        description:     val("f_description")
+  };
+}
+function setFormValues(f) {
+  if (!f) return;
+  ["name","askingPrice","annualRevenue","annualProfit","yearsInOperation","employees","industry","description"].forEach(function(k){
+    var el=document.getElementById("f_"+k); if(el) el.value=f[k]||"";
+  });
+}
+function loadSample() { setFormValues(SAMPLE); }
+function val(id)      { var el=document.getElementById(id); return el?el.value.trim():""; }
+function show(id)     { var el=document.getElementById(id); if(el) el.classList.remove("hidden"); }
+function hide(id)     { var el=document.getElementById(id); if(el) el.classList.add("hidden"); }
+function showErr(id,m){ var el=document.getElementById(id); if(el){el.textContent=m;el.classList.remove("hidden");} }
+function num(n)       { return Number(n||0).toLocaleString(); }
+</script>
+</body>
+</html>
